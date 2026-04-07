@@ -954,7 +954,7 @@ window.addEventListener('DOMContentLoaded',()=>{
 
   if(currentStaff)updStaffDisplay(currentStaff);
   updateTotal();
-  // GAS設定済みならスタッフを同期
+  // GAS URLが固定設定済みのため自動同期
   if(getGasUrl()){
     syncStaffFromGas().then(()=>renderDash());
   } else {
@@ -1217,7 +1217,7 @@ function buildInvoice(){
           <div class="isubrow grand"><span>合　計</span><span class="isv">¥${grand.toLocaleString()}</span></div>
         </div>
         <div class="ipayment">
-          <div><div class="iplbl">お支払期限</div><div class="idue">${dueStr}</div><div style="font-size:10px;color:#6b6560;margin-top:3px">末締め・翌月末払い</div></div>
+          <div><div class="iplbl">お支払期限</div><div class="idue">${dueStr}</div><div style="font-size:10px;color:#6b6560;margin-top:3px">末締め・翌々月10日払い</div></div>
           <div><div class="iplbl">お振込先</div><div class="ipval">${BANK.name||BANK.bank}　${BANK.branch}<br>${BANK.type}　${BANK.no}<br>口座名義：${(BANK&&BANK.holder)?BANK.holder:'ウィンウィンライン(カ'}</div></div>
         </div>
       </div>
@@ -1592,9 +1592,12 @@ function previewPaymentPDF(sf, y, m) {
   // 銀行情報はスタッフごとに取得（previewPaymentPDF内でstaff変数を使って取得）
 
   const issueDay = new Date(y, m, 0).getDate();
-  const dueM = m === 12 ? 1 : m + 1;
-  const dueY = m === 12 ? y + 1 : y;
-  const dueLast = new Date(dueY, dueM, 0).getDate();
+  // 翌々月10日払い
+  const dueM2 = m >= 11 ? m - 9 : m + 2;
+  const dueY2 = m >= 11 ? y + 1 : y;
+  const dueM = dueM2;
+  const dueY = dueY2;
+  const dueLast = 10;
 
   let allHtml = '';
 
@@ -2082,8 +2085,8 @@ function saveSettingsData(d) { localStorage.setItem('wwl_settings', JSON.stringi
 
 function renderSettings() {
   const s = getSettings();
-  // GAS URL
-  const gasUrl = localStorage.getItem('wwl_gas_url') || '';
+  // GAS URL（固定値があればそちらを優先）
+  const gasUrl = GAS_URL_FIXED || localStorage.getItem('wwl_gas_url') || '';
   document.getElementById('cfg-gas-url').value = gasUrl;
   if (gasUrl) {
     document.getElementById('gasConnStatus').textContent = '設定済み';
@@ -2725,7 +2728,8 @@ function deleteExpense(id){
 
 
 // ── GAS Communication ─────────────────────────────────────────────────────────
-function getGasUrl() { return localStorage.getItem('wwl_gas_url') || ''; }
+const GAS_URL_FIXED = 'https://script.google.com/macros/s/AKfycbyepIWZL-UTkyOeesXHeFSeq0gtO-8s128gx6STRHn3bbKUflH35D1cJy_FBPL-0eKokQ/exec';
+function getGasUrl() { return GAS_URL_FIXED || localStorage.getItem('wwl_gas_url') || ''; }
 
 async function gasPost(data) {
   const url = getGasUrl();
